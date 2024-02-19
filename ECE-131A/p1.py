@@ -3,11 +3,8 @@ Author: Simon Lee (simonlee711@g.ucla.edu)
 
 P1 of ECE 131A Project
 '''
-
 import numpy as np
 import logging
-
-# Set up basic configuration for logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 def simulate_fair_die_tosses(toss_counts):

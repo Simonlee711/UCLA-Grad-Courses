@@ -1,0 +1,76 @@
+2024-02-18 22:17:33,061:INFO:User data loaded successfully
+2024-02-18 22:17:33,079:INFO:User data loaded from ./data/user_data.csv
+2024-02-18 22:18:34,381:INFO:User data loaded successfully
+2024-02-18 22:18:34,389:INFO:User data loaded from ./data/user_data.csv
+2024-02-18 22:18:34,653:INFO:PMF plots generated successfully
+2024-02-18 22:19:13,569:INFO:User data loaded successfully
+2024-02-18 22:19:13,575:INFO:User data loaded from ./data/user_data.csv
+2024-02-18 22:19:13,660:INFO:PMF plots generated successfully
+2024-02-18 22:19:16,883:INFO:PMF plots generated successfully
+2024-02-18 22:19:24,853:INFO:User data reloaded for PART C
+2024-02-18 22:19:24,858:INFO:Calculated new normalized probabilities: P(B=0)=0.8045657987470684, P(B=1)=0.19543420125293168
+2024-02-18 22:20:18,274:INFO:User data loaded successfully
+2024-02-18 22:20:18,283:INFO:User data loaded from ./data/user_data.csv
+2024-02-18 22:20:18,384:INFO:PMF plots generated successfully
+2024-02-18 22:20:22,561:INFO:PMF plots generated successfully
+2024-02-18 22:20:24,924:INFO:Calculated user normalized probabilities: P(B=0)=0.8045657987470684, P(B=1)=0.19543420125293168
+2024-02-18 22:30:00,782:INFO:User data loaded successfully
+2024-02-18 22:30:19,340:INFO:User data loaded successfully
+2024-02-18 22:30:19,353:INFO:User data loaded from ./data/user_data.csv
+2024-02-18 22:30:19,463:INFO:PMF plots generated successfully
+2024-02-18 22:30:23,489:INFO:PMF plots generated successfully
+2024-02-18 22:30:25,564:INFO:Calculated user normalized probabilities: P(B=0)=0.8045657987470684, P(B=1)=0.19543420125293168
+2024-02-18 23:18:58,348:INFO:Parameters set for Part A: t=10000, n_values=[1, 2, 3, 10, 30, 100], a=10, b=16
+2024-02-18 23:18:58,371:INFO:Starting plot setup for Part A.
+2024-02-18 23:18:58,375:INFO:Generated samples and calculated Z_n for n=1.
+2024-02-18 23:18:58,400:INFO:Generated samples and calculated Z_n for n=2.
+2024-02-18 23:18:58,411:INFO:Generated samples and calculated Z_n for n=3.
+2024-02-18 23:18:58,424:INFO:Generated samples and calculated Z_n for n=10.
+2024-02-18 23:18:58,601:INFO:Generated samples and calculated Z_n for n=30.
+2024-02-18 23:18:58,626:INFO:Generated samples and calculated Z_n for n=100.
+2024-02-18 23:18:58,673:INFO:Completed plotting for Part A.
+2024-02-18 23:19:02,940:INFO:Starting Part C.
+2024-02-18 23:19:02,941:INFO:Generated samples and calculated Z_n for Part C, n=1.
+2024-02-18 23:19:02,942:INFO:Calculated Gaussian parameters for Part C, n=1: mu=13, sigma=1.7321.
+2024-02-18 23:19:02,962:INFO:Generated samples and calculated Z_n for Part C, n=2.
+2024-02-18 23:19:02,963:INFO:Calculated Gaussian parameters for Part C, n=2: mu=13, sigma=1.2247.
+2024-02-18 23:19:02,974:INFO:Generated samples and calculated Z_n for Part C, n=3.
+2024-02-18 23:19:02,974:INFO:Calculated Gaussian parameters for Part C, n=3: mu=13, sigma=1.0000.
+2024-02-18 23:19:02,988:INFO:Generated samples and calculated Z_n for Part C, n=10.
+2024-02-18 23:19:02,988:INFO:Calculated Gaussian parameters for Part C, n=10: mu=13, sigma=0.5477.
+2024-02-18 23:19:03,006:INFO:Generated samples and calculated Z_n for Part C, n=30.
+2024-02-18 23:19:03,006:INFO:Calculated Gaussian parameters for Part C, n=30: mu=13, sigma=0.3162.
+2024-02-18 23:19:03,029:INFO:Generated samples and calculated Z_n for Part C, n=100.
+2024-02-18 23:19:03,029:INFO:Calculated Gaussian parameters for Part C, n=100: mu=13, sigma=0.1732.
+2024-02-18 23:19:03,049:INFO:Completed plotting for Part C.
+2024-02-18 23:19:11,090:INFO:Starting Part D.
+2024-02-18 23:19:11,091:INFO:Calculated probabilities for modified 12-sided die.
+2024-02-18 23:19:11,093:INFO:Calculated mean and variance for modified 12-sided die: mu=6.235294117647059, var=11.591695501730104.
+2024-02-18 23:19:11,100:INFO:Generated Z_n samples for Part D, n=1.
+2024-02-18 23:19:11,118:INFO:Completed plotting for Part D, n=1.
+2024-02-18 23:19:11,119:INFO:Generated Z_n samples for Part D, n=2.
+2024-02-18 23:19:11,132:INFO:Completed plotting for Part D, n=2.
+2024-02-18 23:19:11,133:INFO:Generated Z_n samples for Part D, n=3.
+2024-02-18 23:19:11,148:INFO:Completed plotting for Part D, n=3.
+2024-02-18 23:19:11,152:INFO:Generated Z_n samples for Part D, n=10.
+2024-02-18 23:19:11,178:INFO:Completed plotting for Part D, n=10.
+2024-02-18 23:19:11,188:INFO:Generated Z_n samples for Part D, n=30.
+2024-02-18 23:19:11,228:INFO:Completed plotting for Part D, n=30.
+2024-02-18 23:19:11,260:INFO:Generated Z_n samples for Part D, n=100.
+2024-02-18 23:19:11,334:INFO:Completed plotting for Part D, n=100.
+2024-02-18 23:19:36,272:INFO:Starting Part E: Gaussian Approximation for Exact PDF of Z_n.
+2024-02-18 23:19:36,276:INFO:Set mean and variance for X_i: mu=13, var=3.
+2024-02-18 23:19:36,277:INFO:Calculated Gaussian PDF parameters for Z_n with n=1: mu=13, sigma=1.7321.
+2024-02-18 23:19:36,289:INFO:Plotted Gaussian Approximation for n=1.
+2024-02-18 23:19:36,290:INFO:Calculated Gaussian PDF parameters for Z_n with n=2: mu=13, sigma=1.2247.
+2024-02-18 23:19:36,290:INFO:Plotted Gaussian Approximation for n=2.
+2024-02-18 23:19:36,290:INFO:Calculated Gaussian PDF parameters for Z_n with n=3: mu=13, sigma=1.0000.
+2024-02-18 23:19:36,291:INFO:Plotted Gaussian Approximation for n=3.
+2024-02-18 23:19:36,291:INFO:Calculated Gaussian PDF parameters for Z_n with n=10: mu=13, sigma=0.5477.
+2024-02-18 23:19:36,291:INFO:Plotted Gaussian Approximation for n=10.
+2024-02-18 23:19:36,291:INFO:Calculated Gaussian PDF parameters for Z_n with n=30: mu=13, sigma=0.3162.
+2024-02-18 23:19:36,291:INFO:Plotted Gaussian Approximation for n=30.
+2024-02-18 23:19:36,291:INFO:Calculated Gaussian PDF parameters for Z_n with n=100: mu=13, sigma=0.1732.
+2024-02-18 23:19:36,292:INFO:Plotted Gaussian Approximation for n=100.
+2024-02-18 23:19:36,294:INFO:Completed plotting for Part E.
+2024-02-18 23:19:36,402:INFO:Script fully completed.
