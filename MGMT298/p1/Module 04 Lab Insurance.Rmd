@@ -1,0 +1,152 @@
+---
+title: "Linear Regression"
+subtitle: "Application: Predicting health insurance expenses"
+author: "Elisa Long"
+date: "4/8/2021"
+output: html_document
+---
+
+# 1. Overview
+
+To set premiums for their beneficiaries, health insurers develop models to accurately forecast medical expenses, a challenge to estimate because the most costly conditions are rare and often occur randomly. Some conditions are more prevalent for certain segments of the population (e.g., lung cancer is more common among smokers than non-smokers).
+
+The goal of this analysis is to use anonymized patient data to estimate average medical care costs based on individual characteristics. These estimates could be used by private insurers to set prices, or by government payers (e.g., Medicare) to predict costs.
+
+# 2. Data Collection
+ 
+We will use a simulated dataset containing hypothetical medical expenses for patients in the United States. This data was created using demographic statistics from the US Census Bureau, and thus, approximately reflect real-world conditions.
+
+The insurance.csv file includes 1,338 beneficiaries currently enrolled in the insurance plan, with characteristics of the patient and total medical expenses charged to the plan for the calendar year. The variables are:
+
+* **expenses:** Annual medical costs charged to the insurance plan.
+* **age:** Age of the primary beneficiary (excluding those 65+, who are typically covered by Medicare).
+* **sex:** Categorical variable for biological sex (male or female).
+* **bmi:** Body mass index (BMI), which equals weight (in kg) divided by height (in meters) squared. An ideal BMI is between 18.5 and 24.9.
+* **children:** Number of children/dependents covered by the insurance plan.
+* **smoker:** Categorical variable for whether the individual regularly smokes tobacco (yes or no).
+* **region:** Categorical variable for geographic residence in the US: northeast, southeast, southwest, or northwest.
+
+It is important to think about how these variables may be related to medical expenses. For example, we might expect that older people and smokers tend to have higher medical expenses. In regression analysis, relationships among the variables are specified by the user rather than being detected automatically, as with machine learning. 
+
+# 3. Data Exploration
+
+Let's first load some useful libraries. We add the option 'message = FALSE' to suppress printing the code output.
+```{r, message = FALSE}
+library(tidyverse)
+library(formattable)
+library(jtools)
+library(stargazer)
+```
+
+Use read.csv() to load the insurance data for analysis. We add the option 'stringsAsFactors = TRUE' to convert the 3 categorical variables to factors:
+```{r}
+setwd("??")
+INSURANCE = read.csv("insurance.csv", stringsAsFactors = TRUE)
+```
+
+**QUESTION 1:** What are the mean and median medical expenses? What does this tell you about the distribution? Use ggplot to create a histogram of expenses (you can try different colors https://bookdown.org/hneth/ds4psy/D-3-apx-colors-basics.html)
+```{r}
+summary(INSURANCE$expenses)
+```
+
+```{r}
+ggplot(data=??, aes(x=??)) +
+  geom_histogram(fill="dodgerblue", color="white", binwidth=1000) 
+```
+
+**QUESTION 2:** Create a correlation matrix for the 4 numeric variables. Which 2 variables are most strongly correlated with each other?
+```{r}
+round(cor(INSURANCE[c("age", ??, ??, ??)]), 2)
+```
+
+**QUESTION 3:** Plot side-by-side histograms of expenses, by gender (using facet_wrap).
+```{r}
+ggplot(data=??, aes(x=??, fill=sex)) +
+  geom_histogram(color="white", binwidth=1000) +
+  facet_wrap(~sex)
+```
+
+**QUESTION 4:** Use a t-test to test whether mean expenses differ, on average, by sex. 
+```{r}
+t.test(expenses ~ sex, data=??)
+```
+
+**QUESTION 5:** Create a new dataframe called SMOKE with counts of beneficiaries by sex and smoking status. You can view this using the formattable package. What do you notice? Use a proportion-test to test whether smoking rates also differ by sex. 
+```{r}
+SMOKE = INSURANCE %>%
+  group_by(sex) %>%
+  summarize(total = n(), smokers = sum(smoker == "yes")) 
+
+SMOKE$proportion = ?? / ??
+
+formattable(SMOKE)
+```
+
+```{r}
+prop.test(SMOKE$smokers, SMOKE$total)
+```
+
+**QUESTION 6:** Create a column chart with smoking rates, by sex, and add 95% confidence intervals.
+```{r}
+ggplot(data=??, aes(x=??, y=proportion, fill=sex)) +
+  geom_col(width=0.5) +
+  geom_errorbar(aes(ymin=proportion-1.96*sqrt(proportion*(1-proportion)/total), 
+                    ymax=proportion+1.96*sqrt(proportion*(1-proportion)/total)), width=0.25) +
+  scale_y_continuous("Proportion who smoke") +
+  ggtitle("Smoking rates by sex")
+```
+
+# 4. Linear Regression Analysis
+
+We next use linear regression to examine the association between medical expenses and the independent variables.
+
+**QUESTION 7:** Run a simple linear regression on just age (let's name this "regression1"). Use the summ() command from the jtools package to format the output. What is your interpretation of the coefficient on age? Is this statistically significant at the 5% level?
+```{r}
+regression1 = lm(expenses ~ age, data = INSURANCE)
+summ(regression1, digits=3)
+```
+
+**QUESTION 8:** Run a regression with with indepdendent variables age, children, BMI, sex, and smoking status (let's name this "regression2"). Do men have higher or lower expenses, holding all other variables constant? What about smokers? Is this consistent with your earlier t-test? What might explain this? 
+```{r}
+regression2 = lm(expenses ~ age + ?? + ?? + ?? + ??, data = INSURANCE)
+summ(regression2, digits=3)
+```
+
+**QUESTION 9:** Run another regression, adding region as an independent variable (let's name this "regression3"). Which geographic region has the highest medical expenses, controlling for the other variables?
+```{r}
+regression3 = lm(expenses ~ age + children + bmi + sex + smoker + region, data = INSURANCE)
+summ(regression3, digits=3)
+```
+
+**QUESTION 10:** Use the stargazer package to compare model performance. What fraction of the variation in medical expenses is explained by variation in these 6 variables in regression3?
+```{r}
+stargazer(regression1, regression2, regression3, type ="text", digits = 2)
+```
+
+**QUESTION 11:** Let's go back to regression2, but add an interaction term for smoker and BMI. What is the interpretation of this coefficient? Let's also create a scatterplot for insurance expenses, showing lines for smokers and non-smokers.
+```{r}
+regression4 = lm(expenses ~ age + children + bmi + sex + smoker + ?? * ??, data = INSURANCE)
+summ(regression4, digits=3)
+```
+
+```{r}
+ggplot(data=INSURANCE, aes(x=bmi, y=expenses, color=smoker)) +
+  geom_point() + geom_smooth(method="lm", se=FALSE) + 
+  scale_x_continuous("Body Mass Index (BMI)") + 
+  scale_y_continuous("Health Insurance Expenses") +
+  ggtitle("Interaction between BMI and smoking") +  
+  scale_color_discrete(name = NULL, labels = c("Non-Smokers", "Smokers")) 
+```
+
+**QUESTION 12:** Let's predict medical expenses using regression2 and regression4 for a 59-year old female with 2 children, BMI = 35, and smoker. What is a 95% prediction interval?
+```{r}
+CUSTOMER = data.frame(age=59, sex="female", bmi=35, children=2, smoker="yes")
+predict(regression2, CUSTOMER, interval="predict") 
+predict(regression4, CUSTOMER, interval="predict") 
+```
+
+# R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this: 
