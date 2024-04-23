@@ -1,8 +1,8 @@
 ---
 title: "Linear Regression"
 subtitle: "Application: Predicting health insurance expenses"
-author: "Elisa Long"
-date: "4/8/2021"
+author: "Simon Lee"
+date: "4/23/2024"
 output: html_document
 ---
 
@@ -40,7 +40,7 @@ library(stargazer)
 
 Use read.csv() to load the insurance data for analysis. We add the option 'stringsAsFactors = TRUE' to convert the 3 categorical variables to factors:
 ```{r}
-setwd("??")
+setwd("/Users/simonlee/UCLA-Grad-Courses/MGMT298/p1/")
 INSURANCE = read.csv("insurance.csv", stringsAsFactors = TRUE)
 ```
 
@@ -49,26 +49,31 @@ INSURANCE = read.csv("insurance.csv", stringsAsFactors = TRUE)
 summary(INSURANCE$expenses)
 ```
 
+The mean of the medical expenses are \$13270 and the median is \$9382
+
 ```{r}
-ggplot(data=??, aes(x=??)) +
-  geom_histogram(fill="dodgerblue", color="white", binwidth=1000) 
+ggplot(data = INSURANCE, aes(x = expenses)) +
+  geom_histogram(fill = "dodgerblue", color = "white", binwidth = 1000) +
+  labs(x = "Medical Expenses", y = "Frequency") +
+  theme_minimal()
 ```
 
 **QUESTION 2:** Create a correlation matrix for the 4 numeric variables. Which 2 variables are most strongly correlated with each other?
 ```{r}
-round(cor(INSURANCE[c("age", ??, ??, ??)]), 2)
+round(cor(INSURANCE[c("age", "bmi", "children", "expenses")]), 2)
 ```
+The two most highly correlated variables are age and expenses.
 
 **QUESTION 3:** Plot side-by-side histograms of expenses, by gender (using facet_wrap).
 ```{r}
-ggplot(data=??, aes(x=??, fill=sex)) +
+ggplot(data=INSURANCE, aes(x=expenses, fill=sex)) +
   geom_histogram(color="white", binwidth=1000) +
   facet_wrap(~sex)
 ```
 
 **QUESTION 4:** Use a t-test to test whether mean expenses differ, on average, by sex. 
 ```{r}
-t.test(expenses ~ sex, data=??)
+t.test(expenses ~ sex, data=INSURANCE)
 ```
 
 **QUESTION 5:** Create a new dataframe called SMOKE with counts of beneficiaries by sex and smoking status. You can view this using the formattable package. What do you notice? Use a proportion-test to test whether smoking rates also differ by sex. 
@@ -77,10 +82,12 @@ SMOKE = INSURANCE %>%
   group_by(sex) %>%
   summarize(total = n(), smokers = sum(smoker == "yes")) 
 
-SMOKE$proportion = ?? / ??
+SMOKE$proportion <- SMOKE$smokers / SMOKE$total
 
 formattable(SMOKE)
 ```
+I notice that there is a slightly higher proportion of smokers in males than females.
+
 
 ```{r}
 prop.test(SMOKE$smokers, SMOKE$total)
@@ -88,10 +95,11 @@ prop.test(SMOKE$smokers, SMOKE$total)
 
 **QUESTION 6:** Create a column chart with smoking rates, by sex, and add 95% confidence intervals.
 ```{r}
-ggplot(data=??, aes(x=??, y=proportion, fill=sex)) +
-  geom_col(width=0.5) +
-  geom_errorbar(aes(ymin=proportion-1.96*sqrt(proportion*(1-proportion)/total), 
-                    ymax=proportion+1.96*sqrt(proportion*(1-proportion)/total)), width=0.25) +
+ggplot(data = SMOKE, aes(x = sex, y = proportion, fill = sex)) +
+  geom_col(width = 0.5) +
+  geom_errorbar(aes(ymin = proportion - 1.96 * sqrt(proportion * (1 - proportion) / total), 
+                    ymax = proportion + 1.96 * sqrt(proportion * (1 - proportion) / total)), 
+                width = 0.25) +
   scale_y_continuous("Proportion who smoke") +
   ggtitle("Smoking rates by sex")
 ```
@@ -102,13 +110,13 @@ We next use linear regression to examine the association between medical expense
 
 **QUESTION 7:** Run a simple linear regression on just age (let's name this "regression1"). Use the summ() command from the jtools package to format the output. What is your interpretation of the coefficient on age? Is this statistically significant at the 5% level?
 ```{r}
-regression1 = lm(expenses ~ age, data = INSURANCE)
+regression1 <- lm(expenses ~ age, data = INSURANCE)
 summ(regression1, digits=3)
 ```
 
 **QUESTION 8:** Run a regression with with indepdendent variables age, children, BMI, sex, and smoking status (let's name this "regression2"). Do men have higher or lower expenses, holding all other variables constant? What about smokers? Is this consistent with your earlier t-test? What might explain this? 
 ```{r}
-regression2 = lm(expenses ~ age + ?? + ?? + ?? + ??, data = INSURANCE)
+regression2 = lm(expenses ~ age + children + bmi + sex +smoker, data = INSURANCE)
 summ(regression2, digits=3)
 ```
 
@@ -118,14 +126,22 @@ regression3 = lm(expenses ~ age + children + bmi + sex + smoker + region, data =
 summ(regression3, digits=3)
 ```
 
+The region with the highest expense is Southeast which spend roughly \$1035 on average per every step in the x-axis 
+
 **QUESTION 10:** Use the stargazer package to compare model performance. What fraction of the variation in medical expenses is explained by variation in these 6 variables in regression3?
 ```{r}
 stargazer(regression1, regression2, regression3, type ="text", digits = 2)
 ```
 
+In regression3, the R-squared value is 0.75. This means that approximately 75% of the variation in medical expenses can be explained by the variation in the six independent variables included in the model.
+
 **QUESTION 11:** Let's go back to regression2, but add an interaction term for smoker and BMI. What is the interpretation of this coefficient? Let's also create a scatterplot for insurance expenses, showing lines for smokers and non-smokers.
+
+
+the coefficient for the interaction term captures how the relationship between BMI and medical expenses differs between smokers and non-smokers. It provides insight into whether the effect of BMI on medical expenses varies depending on smoking status.
+
 ```{r}
-regression4 = lm(expenses ~ age + children + bmi + sex + smoker + ?? * ??, data = INSURANCE)
+regression4 = lm(expenses ~ age + children + bmi + sex + smoker + smoker * bmi, data = INSURANCE)
 summ(regression4, digits=3)
 ```
 
@@ -141,9 +157,10 @@ ggplot(data=INSURANCE, aes(x=bmi, y=expenses, color=smoker)) +
 **QUESTION 12:** Let's predict medical expenses using regression2 and regression4 for a 59-year old female with 2 children, BMI = 35, and smoker. What is a 95% prediction interval?
 ```{r}
 CUSTOMER = data.frame(age=59, sex="female", bmi=35, children=2, smoker="yes")
-predict(regression2, CUSTOMER, interval="predict") 
-predict(regression4, CUSTOMER, interval="predict") 
+predict(regression2, CUSTOMER, interval="predict", level = 0.95) 
+predict(regression4, CUSTOMER, interval="predict", level = 0.95) 
 ```
+The 95\% confidence intervals are displayed in the table above.
 
 # R Markdown
 
