@@ -1,7 +1,7 @@
 ---
 title: "Linear Regression"
 subtitle: "Application: Predicting health insurance expenses"
-author: "Simon Lee"
+author: "Simon Lee, Jack Taiclet, Eric Li"
 date: "4/23/2024"
 output: html_document
 ---
@@ -49,7 +49,7 @@ INSURANCE = read.csv("insurance.csv", stringsAsFactors = TRUE)
 summary(INSURANCE$expenses)
 ```
 
-The mean of the medical expenses are \$13270 and the median is \$9382
+The mean of the medical expenses are \$13270 and the median is \$9382. The data is skewed due to the outliers. Median is a more robust statistic so it captures a better "middle" value (50% percentile).  
 
 ```{r}
 ggplot(data = INSURANCE, aes(x = expenses)) +
@@ -114,11 +114,15 @@ regression1 <- lm(expenses ~ age, data = INSURANCE)
 summ(regression1, digits=3)
 ```
 
+The older you are the more it will cost you medically and this is pretty statistically significant given the p value. (Actually we don't necessarily know because of the rounding.)
+
 **QUESTION 8:** Run a regression with with indepdendent variables age, children, BMI, sex, and smoking status (let's name this "regression2"). Do men have higher or lower expenses, holding all other variables constant? What about smokers? Is this consistent with your earlier t-test? What might explain this? 
 ```{r}
 regression2 = lm(expenses ~ age + children + bmi + sex +smoker, data = INSURANCE)
 summ(regression2, digits=3)
 ```
+
+Men have a lower expense. This is not consistent with the previous t test but this can be due to including all variables in the dataframe in the linear regression whereas the t test only computed from male to female. 
 
 **QUESTION 9:** Run another regression, adding region as an independent variable (let's name this "regression3"). Which geographic region has the highest medical expenses, controlling for the other variables?
 ```{r}
@@ -126,7 +130,7 @@ regression3 = lm(expenses ~ age + children + bmi + sex + smoker + region, data =
 summ(regression3, digits=3)
 ```
 
-The region with the highest expense is Southeast which spend roughly \$1035 on average per every step in the x-axis 
+The region with the highest expense is northwest which spend roughly \$-352 on average per every step in the x-axis based on the table. But the north east has 0 negative expenses so it is in theory spending the most. 
 
 **QUESTION 10:** Use the stargazer package to compare model performance. What fraction of the variation in medical expenses is explained by variation in these 6 variables in regression3?
 ```{r}
@@ -160,7 +164,7 @@ CUSTOMER = data.frame(age=59, sex="female", bmi=35, children=2, smoker="yes")
 predict(regression2, CUSTOMER, interval="predict", level = 0.95) 
 predict(regression4, CUSTOMER, interval="predict", level = 0.95) 
 ```
-The 95\% confidence intervals are displayed in the table above.
+The 95\% confidence intervals are displayed in the table above. To interpret is we can say that 95% of the prediction will fall into this range.
 
 # R Markdown
 
