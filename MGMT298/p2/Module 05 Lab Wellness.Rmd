@@ -1,0 +1,220 @@
+---
+title: "Behavioral Incentives"
+subtitle: "Application: Workplace health & wellness programs"
+author: "??"
+date: "4/30/2024"
+output: html_document
+---
+
+# 1. Overview
+
+Workplace health and wellness programs aim to provide monetary incentives to employees to encourage exercise, weight loss, and other health measures. Starting in August 2016, a wellness program at the University of Illinois randomized participants into a treatment or control group. The goal of this analysis is to investigate whether the program had different outcomes after 1 year (July 2017) or after more than 2 years (January 2019).
+
+# 2. Data Collection
+ 
+We have 5 datasets covering 4,834 participants in the wellness study, each containing the following binary variables:
+
+* **treat:** Intervention group (control=0, treated=1)
+* **hra_c_yr1:** Completed 2016 Health Risk Assessment (no=0, yes=1)
+* **male:** Sex of participant (female=0, male=1)
+* **age50:** Age of participant (over age 50=1)
+* **age37_49:** Age of participant (age 37-49=1)
+* **white:** Race of participant (non-white=0, white=1)
+
+Additional variables have date suffixes indicating the timeframe: 0715_0716 is pre-intervention; 0816_0717 is 1-year post-intervention; 0816_0119 is 2-years post-intervention.
+
+Let's first load some useful libraries. We add the option 'message = FALSE' to suppress printing the code output.
+```{r, message = FALSE}
+library(tidyverse)
+library(formattable)
+library(scales)
+```
+
+Use read.csv() to load the 5 wellness datasets for analysis:
+```{r}
+#setwd("C:/Users/elong/Dropbox/UCLA/HealthcareAnalytics/2021 Spring/Week 4")
+CLAIMS = read.csv("claims.csv")
+FIRM = read.csv("firm_admin.csv")
+MARATHON = read.csv("marathon.csv")
+SURVEY = read.csv("online_surveys.csv")
+PARTICIPATION = read.csv("participation.csv")
+```
+
+# 3. Data Exploration
+
+**QUESTION 1:** Create a categorical variable for someone aged 36 or below.
+```{r}
+PARTICIPATION$age36 = ??
+```
+
+Using the PARTICIPATION dataset, let's summarize the baseline characteristics for the treated and control groups. For more details, see https://sebastiansauer.github.io/multiple-t-tests-with-dplyr/
+```{r}
+BASELINE = PARTICIPATION %>%
+  select(age36, age37_49, age50, male, white, salaryQ1, salaryQ2, salaryQ3, salaryQ4, CS, faculty, AP, treat) %>%
+  group_by(treat) %>%
+  summarise_all(mean) %>%
+  gather(variable, value, -treat) %>%
+  spread(treat, value) %>%
+  rename(Control = "0", Treatment = "1")
+
+formattable(BASELINE)
+```
+
+# 4. Intervention Evaluation
+
+**QUESTION 2:** Using the CLAIMS data, test whether average healthcare spending 1-year post-intervention (spend_0816_0717) is different between the treatment and control groups. What is your interpretation?
+```{r}
+CLAIMS$treat = as.factor(CLAIMS$treat)
+t.test(??)
+```
+
+Next, let's calculate the mean, SD, and 95\% confidence interval for healthcare spending, for the treatment and control groups. 
+```{r}
+SPENDING = CLAIMS %>%
+  group_by(treat) %>%
+  summarise(mean=mean(spend_0816_0717, na.rm=TRUE), sd=sd(spend_0816_0717, na.rm=TRUE), n=n()) %>%
+  mutate(lower=mean-1.96*sd/sqrt(n), upper=mean+1.96*sd/sqrt(n))
+```
+
+**QUESTION 3:** Create a plot showing average spending, by intervention group, along with error bars for the confidence intervals. Is this consistent with the earlier t-test? 
+```{r}
+ggplot(data = ??, aes(x=??, y=??, fill=treat)) +
+  geom_col() +
+  geom_errorbar(aes(ymin=lower, ymax=upper), width=0.25) +
+  theme(legend.position = "none") +
+  scale_x_discrete("", labels = c("0"="Control","1"="Treatment")) +
+  scale_y_continuous("Average Monthly Spending ($)") +
+  ggtitle("Healthcare Spending 1-year Post-Invervention")
+```
+
+**QUESTION 4:** Using the FIRM dataset, repeat the above analysis and plot for annual gym use one-year post-intervention. What is your interpretation?
+```{r}
+FIRM$treat = as.factor(FIRM$treat)
+t.test(??)
+```
+
+```{r}
+GYM = ?? %>%
+  group_by(??) %>%
+  summarise(??) %>%
+  mutate(??)
+```
+
+```{r}
+ggplot(data = ??, aes(x=??, y=??, fill=treat)) +
+  geom_col() +
+  geom_errorbar(aes(ymin=lower, ymax=upper), width=0.25) +
+  theme(legend.position = "none") +
+  scale_x_discrete("", labels = c("0"="Control","1"="Treatment")) +
+  scale_y_continuous("Annual Gym Visits") +
+  ggtitle("Gym Visits 1-year Post-Invervention")
+```
+
+**QUESTION 5:** Using the FIRM dataset, repeat the above analysis and plot for days of sick leave one-year post-intervention. What is your interpretation?
+```{r}
+t.test(??)
+```
+
+```{r}
+SICK = ?? %>%
+  group_by(??) %>%
+  summarise(??) %>%
+  mutate(??)
+```
+
+```{r}
+ggplot(data = ??, aes(x=??, y=??, fill=treat)) +
+  geom_col() +
+  geom_errorbar(aes(ymin=lower, ymax=upper), width=0.25) +
+  theme(legend.position = "none") +
+  scale_x_discrete("", labels = c("0"="Control","1"="Treatment")) +
+  scale_y_continuous("Annual Sick Leave (days)") +
+  ggtitle("Sick Leave 1-year Post-Invervention")
+```
+
+# 5. Adverse Selection
+
+Here, we will examine whether the baseline characteristics differ between participants in the Treatment group who completed the Health Risk Assessment (ie, they elect to participate in the wellness program after being randomly assigned to the Treatment group).
+
+**QUESTION 6:** Filter the CLAIMS data to include participants in the Treatment group only. Convert the variable hra_c_yr1 to a factor (categorical) variable. Then, test whether mean healthcare spending before the intervention (07/15 to 07/16) differs among those completing the HRA or not. What is your interpretation?
+```{r}
+CLAIMS_TREATED = CLAIMS %>%
+  filter(?? == "1") 
+
+CLAIMS_TREATED$hra_c_yr1 = as.factor(CLAIMS_TREATED$hra_c_yr1)
+
+t.test(??)
+```
+
+**QUESTION 7:** Calculate the mean, SD, and 95\% confidence interval for healthcare spending, for the HRA and non-HRA groups. Create a plot showing average spending, by HRA group, along with error bars for the confidence intervals.  
+```{r}
+SPENDING_TREATED = CLAIMS_TREATED %>%
+  group_by(??) %>%
+  summarise(??) %>%
+  mutate(??)
+```
+
+```{r}
+ggplot(data = ??, aes(x=??, y=??, fill=hra_c_yr1)) +
+  geom_col() +
+  geom_errorbar(aes(ymin=lower, ymax=upper), width=0.25) +
+  theme(legend.position = "none") +
+  scale_x_discrete("", labels = c("0"="Did Not Complete HRA","1"="Completed HRA")) +
+  scale_y_continuous("Average Monthly Spending ($)") +
+  ggtitle("Prior Healthcare Spending (Treated Participants Only)")
+```
+
+**QUESTION 8:** Using the FIRM dataset, repeat the above analysis for baseline gym attendance from 08/15 to 07/16. 
+```{r}
+FIRM_TREATED = FIRM %>%
+  filter(?? == "1") 
+
+FIRM_TREATED$hra_c_yr1 = as.factor(FIRM_TREATED$hra_c_yr1)
+
+t.test(??)
+```
+
+```{r}
+GYM_TREATED = FIRM_TREATED %>%
+  group_by(??) %>%
+  summarise(??) %>%
+  mutate(??)
+```
+
+```{r}
+ggplot(data = ??, aes(x=??, y=??, fill=hra_c_yr1)) +
+  geom_col() +
+  geom_errorbar(aes(ymin=lower, ymax=upper), width=0.25) +
+  theme(legend.position = "none") +
+  scale_x_discrete("", labels = c("0"="Did Not Complete HRA","1"="Completed HRA")) +
+  scale_y_continuous("Average Gym Visits per Year") +
+  ggtitle("Prior Gym Visits (Treated Participants Only)")
+```
+
+**QUESTION 9:** Using the MARATHON dataset, calculate the proportion of participants, by HRA group, who ran a marathon from 2014 to 2016. Test whether this is statistically significantly different. Create a plot showing marathon participation, by HRA group, along with error bars for the confidence intervals. 
+
+```{r}
+MARATHON$hra_c_yr1 = as.factor(MARATHON$hra_c_yr1)
+MARATHON$treat = as.factor(MARATHON$treat)
+
+MARATHON_TREATED = MARATHON %>%
+  filter(treat == "1") %>%
+  group_by(hra_c_yr1) %>%
+  summarise(runners=sum(marathon_2014_2016), n=n()) %>%
+  mutate(prop=runners/n) %>%
+  mutate(lower=prop-1.96*sqrt(prop*(1-prop)/n), upper=prop+1.96*sqrt(prop*(1-prop)/n))
+
+prop.test(??)
+```
+
+```{r}
+ggplot(data = ??, aes(x=??, y=??, fill=hra_c_yr1)) +
+  geom_col() +
+  geom_errorbar(aes(ymin=lower, ymax=upper), width=0.25) +
+  theme(legend.position = "none") +
+  scale_x_discrete("", labels = c("0"="Did Not Complete HRA","1"="Completed HRA")) +
+  scale_y_continuous("Fraction Completing a Marathon", labels = percent) +
+  ggtitle("Prior Marathon Experience, 2014-2016 (Treated Participants Only)")
+```
+
+**QUESTION 10:** Based on your overall analysis, what can you conclude about this wellness program?
