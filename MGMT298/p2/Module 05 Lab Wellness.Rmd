@@ -1,7 +1,7 @@
 ---
 title: "Behavioral Incentives"
 subtitle: "Application: Workplace health & wellness programs"
-author: "??"
+author: "Simon Lee, Jack Taiclet, Eric Li "
 date: "4/30/2024"
 output: html_document
 ---
@@ -32,7 +32,7 @@ library(scales)
 
 Use read.csv() to load the 5 wellness datasets for analysis:
 ```{r}
-#setwd("C:/Users/elong/Dropbox/UCLA/HealthcareAnalytics/2021 Spring/Week 4")
+#setwd("/Users/simonlee/UCLA-Grad-Courses/MGMT298/p2")
 CLAIMS = read.csv("claims.csv")
 FIRM = read.csv("firm_admin.csv")
 MARATHON = read.csv("marathon.csv")
@@ -40,11 +40,16 @@ SURVEY = read.csv("online_surveys.csv")
 PARTICIPATION = read.csv("participation.csv")
 ```
 
+```{r}
+FIRM
+```
+
 # 3. Data Exploration
 
 **QUESTION 1:** Create a categorical variable for someone aged 36 or below.
 ```{r}
-PARTICIPATION$age36 = ??
+PARTICIPATION$age36 = if_else(PARTICIPATION$age50 == 0 & PARTICIPATION$age37_49 == 0, 1, 0)
+
 ```
 
 Using the PARTICIPATION dataset, let's summarize the baseline characteristics for the treated and control groups. For more details, see https://sebastiansauer.github.io/multiple-t-tests-with-dplyr/
@@ -65,8 +70,11 @@ formattable(BASELINE)
 **QUESTION 2:** Using the CLAIMS data, test whether average healthcare spending 1-year post-intervention (spend_0816_0717) is different between the treatment and control groups. What is your interpretation?
 ```{r}
 CLAIMS$treat = as.factor(CLAIMS$treat)
-t.test(??)
+t.test(spend_0816_0717 ~ treat, data = CLAIMS)
 ```
+Answer: 
+The t-test result does not shows a statistically significant p-value, meaning we do not have a significant difference in average healthcare spending between the treatment and control groups.
+
 
 Next, let's calculate the mean, SD, and 95\% confidence interval for healthcare spending, for the treatment and control groups. 
 ```{r}
@@ -78,7 +86,8 @@ SPENDING = CLAIMS %>%
 
 **QUESTION 3:** Create a plot showing average spending, by intervention group, along with error bars for the confidence intervals. Is this consistent with the earlier t-test? 
 ```{r}
-ggplot(data = ??, aes(x=??, y=??, fill=treat)) +
+# Using the SPENDING dataframe we created
+ggplot(data = SPENDING, aes(x = treat, y = mean, fill = as.factor(treat))) +
   geom_col() +
   geom_errorbar(aes(ymin=lower, ymax=upper), width=0.25) +
   theme(legend.position = "none") +
@@ -87,21 +96,33 @@ ggplot(data = ??, aes(x=??, y=??, fill=treat)) +
   ggtitle("Healthcare Spending 1-year Post-Invervention")
 ```
 
+The results appear to be pretty similar from before. The box plots look pretty similar meaning there was no signifcant difference.
+
+
 **QUESTION 4:** Using the FIRM dataset, repeat the above analysis and plot for annual gym use one-year post-intervention. What is your interpretation?
 ```{r}
 FIRM$treat = as.factor(FIRM$treat)
-t.test(??)
+t.test(gym_0816_0717 ~ treat, data = FIRM)
+```
+Answer:
+We do not have a significant result meaning that the program does not have impacted gym usage.
+
+```{r}
+GYM = FIRM %>%
+  group_by(treat) %>%
+  summarise(
+    mean = mean(gym_0816_0717, na.rm = TRUE),  # Calculate the mean, removing NA values
+    sd = sd(gym_0816_0717, na.rm = TRUE),      # Calculate the standard deviation, removing NA values
+    n = n()                                        # Count the number of observations
+  ) %>%
+  mutate(
+    lower = mean - 1.96 * sd / sqrt(n),            # Lower bound of the 95% confidence interval
+    upper = mean + 1.96 * sd / sqrt(n)             # Upper bound of the 95% confidence interval
+  )
 ```
 
 ```{r}
-GYM = ?? %>%
-  group_by(??) %>%
-  summarise(??) %>%
-  mutate(??)
-```
-
-```{r}
-ggplot(data = ??, aes(x=??, y=??, fill=treat)) +
+ggplot(data = GYM, aes(x = treat, y = mean, fill = treat)) +
   geom_col() +
   geom_errorbar(aes(ymin=lower, ymax=upper), width=0.25) +
   theme(legend.position = "none") +
@@ -111,19 +132,28 @@ ggplot(data = ??, aes(x=??, y=??, fill=treat)) +
 ```
 
 **QUESTION 5:** Using the FIRM dataset, repeat the above analysis and plot for days of sick leave one-year post-intervention. What is your interpretation?
+
 ```{r}
-t.test(??)
+t.test(sickleave_0815_0716 ~ treat, data = FIRM)
 ```
 
 ```{r}
-SICK = ?? %>%
-  group_by(??) %>%
-  summarise(??) %>%
-  mutate(??)
+SICK = FIRM %>%
+  group_by(treat) %>%
+  summarise(
+    mean = mean(sickleave_0816_0717, na.rm = TRUE),
+    sd = sd(sickleave_0816_0717, na.rm = TRUE),
+    n = n()
+  ) %>%
+  mutate(
+    lower = mean - 1.96 * sd / sqrt(n),
+    upper = mean + 1.96 * sd / sqrt(n)
+  )
+
 ```
 
 ```{r}
-ggplot(data = ??, aes(x=??, y=??, fill=treat)) +
+ggplot(data = SICK, aes(x = treat, y = mean, fill = treat)) +
   geom_col() +
   geom_errorbar(aes(ymin=lower, ymax=upper), width=0.25) +
   theme(legend.position = "none") +
@@ -132,6 +162,8 @@ ggplot(data = ??, aes(x=??, y=??, fill=treat)) +
   ggtitle("Sick Leave 1-year Post-Invervention")
 ```
 
+we again do not have a significant p-value indicating: that the intervention does not have an effect on sick leave usage.
+
 # 5. Adverse Selection
 
 Here, we will examine whether the baseline characteristics differ between participants in the Treatment group who completed the Health Risk Assessment (ie, they elect to participate in the wellness program after being randomly assigned to the Treatment group).
@@ -139,23 +171,32 @@ Here, we will examine whether the baseline characteristics differ between partic
 **QUESTION 6:** Filter the CLAIMS data to include participants in the Treatment group only. Convert the variable hra_c_yr1 to a factor (categorical) variable. Then, test whether mean healthcare spending before the intervention (07/15 to 07/16) differs among those completing the HRA or not. What is your interpretation?
 ```{r}
 CLAIMS_TREATED = CLAIMS %>%
-  filter(?? == "1") 
+  filter(treat == "1") 
 
 CLAIMS_TREATED$hra_c_yr1 = as.factor(CLAIMS_TREATED$hra_c_yr1)
 
-t.test(??)
+t.test(spend_0715_0716 ~ hra_c_yr1, data = CLAIMS_TREATED)
 ```
+
+this is a statistically significant difference in healthcare spending before the intervention between those who completed the HRA and those who did not.
 
 **QUESTION 7:** Calculate the mean, SD, and 95\% confidence interval for healthcare spending, for the HRA and non-HRA groups. Create a plot showing average spending, by HRA group, along with error bars for the confidence intervals.  
 ```{r}
 SPENDING_TREATED = CLAIMS_TREATED %>%
-  group_by(??) %>%
-  summarise(??) %>%
-  mutate(??)
+  group_by(hra_c_yr1) %>%
+  summarise(
+    mean = mean(spend_0715_0716, na.rm = TRUE),
+    sd = sd(spend_0715_0716, na.rm = TRUE),
+    n = n()
+  ) %>%
+  mutate(
+    lower = mean - 1.96 * sd / sqrt(n),
+    upper = mean + 1.96 * sd / sqrt(n)
+  )
 ```
 
 ```{r}
-ggplot(data = ??, aes(x=??, y=??, fill=hra_c_yr1)) +
+ggplot(data = SPENDING_TREATED, aes(x = hra_c_yr1, y = mean, fill = hra_c_yr1)) +
   geom_col() +
   geom_errorbar(aes(ymin=lower, ymax=upper), width=0.25) +
   theme(legend.position = "none") +
@@ -167,22 +208,29 @@ ggplot(data = ??, aes(x=??, y=??, fill=hra_c_yr1)) +
 **QUESTION 8:** Using the FIRM dataset, repeat the above analysis for baseline gym attendance from 08/15 to 07/16. 
 ```{r}
 FIRM_TREATED = FIRM %>%
-  filter(?? == "1") 
+  filter(treat == "1") 
 
 FIRM_TREATED$hra_c_yr1 = as.factor(FIRM_TREATED$hra_c_yr1)
 
-t.test(??)
+t.test(gym_0815_0716 ~ hra_c_yr1, data = FIRM_TREATED)
 ```
 
 ```{r}
 GYM_TREATED = FIRM_TREATED %>%
-  group_by(??) %>%
-  summarise(??) %>%
-  mutate(??)
+  group_by(hra_c_yr1) %>%
+  summarise(
+    mean = mean(gym_0815_0716, na.rm = TRUE),
+    sd = sd(gym_0815_0716, na.rm = TRUE),
+    n = n()
+  ) %>%
+  mutate(
+    lower = mean - 1.96 * sd / sqrt(n),
+    upper = mean + 1.96 * sd / sqrt(n)
+  )
 ```
 
 ```{r}
-ggplot(data = ??, aes(x=??, y=??, fill=hra_c_yr1)) +
+ggplot(data = GYM_TREATED, aes(x = hra_c_yr1, y = mean, fill = hra_c_yr1)) +
   geom_col() +
   geom_errorbar(aes(ymin=lower, ymax=upper), width=0.25) +
   theme(legend.position = "none") +
@@ -190,8 +238,14 @@ ggplot(data = ??, aes(x=??, y=??, fill=hra_c_yr1)) +
   scale_y_continuous("Average Gym Visits per Year") +
   ggtitle("Prior Gym Visits (Treated Participants Only)")
 ```
+There is statistical significance again based on the p-value that people who completed of the HRA on gym attendance.
 
 **QUESTION 9:** Using the MARATHON dataset, calculate the proportion of participants, by HRA group, who ran a marathon from 2014 to 2016. Test whether this is statistically significantly different. Create a plot showing marathon participation, by HRA group, along with error bars for the confidence intervals. 
+
+```{r}
+MARATHON
+```
+
 
 ```{r}
 MARATHON$hra_c_yr1 = as.factor(MARATHON$hra_c_yr1)
@@ -204,11 +258,11 @@ MARATHON_TREATED = MARATHON %>%
   mutate(prop=runners/n) %>%
   mutate(lower=prop-1.96*sqrt(prop*(1-prop)/n), upper=prop+1.96*sqrt(prop*(1-prop)/n))
 
-prop.test(??)
+prop.test(x = MARATHON_TREATED$runners, n = MARATHON_TREATED$n, correct = FALSE)
 ```
 
 ```{r}
-ggplot(data = ??, aes(x=??, y=??, fill=hra_c_yr1)) +
+ggplot(data = MARATHON_TREATED, aes(x = hra_c_yr1, y = prop, fill = hra_c_yr1)) +
   geom_col() +
   geom_errorbar(aes(ymin=lower, ymax=upper), width=0.25) +
   theme(legend.position = "none") +
@@ -217,4 +271,8 @@ ggplot(data = ??, aes(x=??, y=??, fill=hra_c_yr1)) +
   ggtitle("Prior Marathon Experience, 2014-2016 (Treated Participants Only)")
 ```
 
+We see a significant difference, suggesting that completing the HRA is associated with higher levels of engagement in physically demanding activities like marathons. This could point to motivational or behavioral differences influenced by engagement in the wellness program.
+
 **QUESTION 10:** Based on your overall analysis, what can you conclude about this wellness program?
+
+The wellness program shows promise in modifying health-related behaviors among its more active participants, particularly those who engage with components like the HRA. However, the presence of self-selection bias and the potential impact of adverse selection suggest that the effectiveness observed might be overestimated for the general population. Further analysis and possibly a redesign of the program to encourage broader and more inclusive participation could help mitigate these biases and enhance the program’s effectiveness.

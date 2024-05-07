@@ -1,0 +1,156 @@
+---
+title: "Classification with Logistic Regression"
+subtitle: "Application: Predicting Disease (Framingham Study)"
+author: "??"
+date: "5/07/2024"
+output: html_document
+---
+
+# 1. Overview
+
+The goal of this analysis is to develop a classification model with logistic regression to predict the 10-year risk of coronary heart disease (CHD). We will use data from the Framingham Study, an observational study of residents in Framingham, Massachusetts that began in 1948 to assess risk factors for cardiovascular disease. The study subsequently recruited 2 more generations of participants. https://framinghamheartstudy.org/
+
+# 2. Data Summary
+
+Let's examine the Framingham dataset, which contains the following variables for 3,658 participants:
+
+**Outcome **
+
+* **TenYearCHD:**      Binary variable if coronary heart disease (CHD) diagnosed within 10 years (1=yes, 0=no)
+
+**Demographics **
+
+* **Male:**            Binary variable for biological sex of patient (1=male, 0=female)
+* **Age:**             Age in years at first examination
+* **Education:**       Categorical variable for education (1=some high school, 2=high school grad, 3=some college, 4=college grad)
+
+**Smoking **
+
+* **Smoker:**          Binary variable for current smoker (1=yes, 0=no)
+* **CigsPerDay:**      Number of cigarettes smoked per day
+
+**Medical history **
+
+* **BPMeds:**          Binary variable for blood pressure medication (1=yes, 0=no) 
+* **Stroke:**          Binary variable for prior stroke (1=yes, 0=no)
+* **Hyper:**           Binary variable for current hypertension (1=yes, 0=no)
+* **Diabetes:**        Binary variable for current diabetes (1=yes, 0=no)
+
+**Labs **
+
+* **TotChol:**         Total cholesterol (mg/dL)
+* **SysBP:**           Systolic blood pressure
+* **DiaBP:**           Diastolic blood pressure
+* **BMI:**             Body mass index (weight/height^2)
+* **HeartRate:**       Heart rate (beats per minute)
+* **Glucose:**         Blood glucose level (mg/dL)
+
+Let's first load some useful libraries. 
+```{r, message = FALSE}
+library(sjPlot)
+library(caTools)
+library(ROCR)
+library(tidyverse)
+library(jtools)
+library(scales)
+library(RColorBrewer)
+library(wesanderson)
+```
+
+Use read.csv() to load the dataset. Convert Education to a factor variable, rename the TenYearCHD variable as CHD, rename the Male variable as Sex, and convert Sex to factor variable with text labels.
+```{r}
+#setwd(??)
+FRAMINGHAM = read.csv("framingham.csv")
+FRAMINGHAM$Education = as.factor(FRAMINGHAM$Education)
+FRAMINGHAM = rename(FRAMINGHAM, CHD = TenYearCHD)
+FRAMINGHAM = rename(FRAMINGHAM, Sex = Male)
+FRAMINGHAM$Sex = ifelse(FRAMINGHAM$Sex == 1, "Male", "Female")
+```
+
+**QUESTION 1:** 
+What fraction of patients experienced CHD?
+```{r}
+??
+```
+
+# 3. Training the Model
+
+Let's first set the same seed. Then split the dataset into training and test datasets, with 75% as training. 
+```{r}
+set.seed(46)
+split = sample.split(FRAMINGHAM$CHD, SplitRatio = 0.75)
+TRAIN = subset(FRAMINGHAM, split == TRUE)
+TEST = subset(FRAMINGHAM, split == FALSE)
+```
+
+**QUESTION 2:** Run a logistic regression on the training dataset, using TenYearCHD as the dependent variable and all others as independent variables. Examine the odds ratios and confidence intervals. Which variables increase the risk of CHD and are statistically significant at 5%?
+```{r}
+LogitCHD = glm(?? ~ ??, data = ??, family = "binomial")
+
+summ(LogitCHD, digits=3, exp=TRUE)
+```
+
+To better visualize this, we can plot the odds ratios and 95% confidence intervals for each variable.
+```{r}
+plot_model(LogitCHD, show.values = TRUE, value.size=3, value.offset=0.5) +
+  annotate("text", x = 1, y = 5, label = "Higher risk") +
+  annotate("text", x = 1, y = 0.2, label = "Lower risk") +
+  ggtitle("Odds ratios for 10-year risk of coronary heart disease (CHD)") 
+```
+
+# 4. Testing the Model
+
+**QUESTION 3:** Using the test dataset, predict the probability of 10-year CHD. Store this value in the TEST dataframe as a new column called PredictCHD.
+```{r}
+?? = predict(LogitCHD, newdata = TEST, type = "response")
+```
+
+**QUESTION 4:** Plot the predicted probability of CHD (y-axis) versus age (x-axis). Adjust the color by the CHD variable and adjust the size by SysBP. Manually add a horizontal line corresponding to a threshold of 0.6. Based on a visual inspection, do you think this threshold is too high or too low?
+```{r}
+TEST$CHD = as.factor(TEST$CHD)
+
+ggplot(??, aes(x=??, y=??, color=??, size=??)) + 
+  facet_wrap(~ Sex) +
+  geom_point(alpha=0.25) + 
+  geom_hline(yintercept=??, color = "navy") +
+  annotate(geom="text", x=40, y=0.63, label="Threshold = 0.6", color="navy") +
+  scale_y_continuous("Predicted Probability of CHD") +
+  scale_color_manual("CHD", labels = c("No", "Yes"), values = wes_palette("Royal1", n = )) +
+  ggtitle("Predicted Probability vs Actual Coronary Heart Disease (CHD)")  
+```
+
+# 5. Model Accuracy
+
+**QUESTION 5:** In the training data, which outcome for TenYearCHD is most likely? Suppose we use this outcome as our prediction for ALL patients in the test data. What is the accuracy of this base model? Hint: use the table() function to see raw observation counts.
+```{r}
+table(??)
+table(??)
+
+BaseAccuracy = ??
+BaseAccuracy
+```
+
+**QUESTION 6:** Generate a confusion matrix, assuming a probability cutoff threshold of 0.6. What is the accuracy of the model using the test dataset? 
+```{r}
+Threshold = 0.6
+
+Confusion = table(TEST$CHD, TEST$PredictCHD > ??)
+Confusion
+
+Accuracy = sum(diag(Confusion)) / nrow(TEST)
+Accuracy
+```
+
+**QUESTION 7:** Plot a receiver operating characteristic (ROC) curve and report the area-under-the-curve (AUC).
+```{r}
+ROCpred = prediction(TEST$PredictCHD, TEST$CHD)
+ROCperf = performance(ROCpred, "tpr", "fpr")
+
+plot(ROCperf, main = "Receiver Operating Characteristic Curve", 
+     colorize=TRUE, print.cutoffs.at=seq(0,1,by=0.1), text.adj=c(-0.3,1.0))
+```
+
+```{r}
+AUC = as.numeric(performance(ROCpred, "auc")@y.values)
+AUC
+```
