@@ -1,0 +1,177 @@
+```{r}
+library(ggplot2)
+
+# Load the data
+data <- read.csv("/Users/simonlee/UCLA-Grad-Courses/MGMT298/viz1/vaccinations-by-manufacturer (1).csv")
+summary(data)
+```
+
+```{r}
+# Load necessary libraries
+library(ggplot2)
+
+# Load the data
+data <- read.csv("/Users/simonlee/UCLA-Grad-Courses/MGMT298/viz1/vaccinations-by-manufacturer (1).csv")
+
+# Calculate the IQR (Interquartile Range)
+Q1 <- quantile(data$total_vaccinations, 0.25)
+Q3 <- quantile(data$total_vaccinations, 0.75)
+IQR <- Q3 - Q1
+
+# Define the lower and upper bounds for outliers
+lower_bound <- Q1 - 1.5 * IQR
+upper_bound <- Q3 + 1.5 * IQR
+
+# Filter out outliers
+filtered_data <- data[data$total_vaccinations >= lower_bound & data$total_vaccinations <= upper_bound,]
+
+# Check the structure and summary of the filtered data
+str(filtered_data)
+summary(filtered_data)
+
+
+```
+```{r}
+# Load necessary libraries
+library(ggplot2)
+
+# Load the data
+data <- read.csv("/Users/simonlee/UCLA-Grad-Courses/MGMT298/viz1/vaccinations-by-manufacturer (1).csv")
+
+# Convert 'date' from character to Date type
+data$date <- as.Date(data$date, "%Y-%m-%d")
+
+# Calculate the IQR (Interquartile Range)
+Q1 <- quantile(data$total_vaccinations, 0.25)
+Q3 <- quantile(data$total_vaccinations, 0.75)
+IQR <- Q3 - Q1
+
+# Define the lower and upper bounds for outliers
+lower_bound <- Q1 - 1.5 * IQR
+upper_bound <- Q3 + 1.5 * IQR
+
+# Filter out outliers
+filtered_data <- data[data$total_vaccinations >= lower_bound & data$total_vaccinations <= upper_bound,]
+
+# Plot total vaccinations over time, colored by location
+ggplot(filtered_data, aes(x = date, y = total_vaccinations, color = location)) +
+  geom_line() +  # Using geom_line() to show trends over time; adjust to geom_point() if discrete points are preferred
+  scale_y_log10() + # Logarithmic scale on y-axis to handle wide range of vaccination numbers
+  labs(title = "Total Vaccinations Over Time by Country",
+       x = "Date",
+       y = "Total Number of Vaccinations (log scale)",
+       color = "Country") +
+  theme_minimal() +  # Cleaner theme for better visualization
+  theme(legend.position = "bottom")  # Adjust legend position to avoid clutter
+
+
+```
+
+
+```{r}
+# Convert 'date' from character to Date type
+data$date <- as.Date(data$date, "%Y-%m-%d")
+
+# Scatterplot
+ggplot(data, aes(x = date, y = total_vaccinations, color = vaccine)) +
+  geom_point() +
+  labs(title = "Scatterplot of Total Vaccinations Over Time", x = "Date", y = "Total Vaccinations")
+
+# Line Graph
+ggplot(data, aes(x = date, y = total_vaccinations, color = vaccine)) +
+  geom_line() +
+  labs(title = "Line Graph of Vaccinations Over Time", x = "Date", y = "Total Vaccinations")
+
+# Boxplot without outliers
+ggplot(filtered_data, aes(x = vaccine, y = total_vaccinations)) +
+  geom_boxplot() +
+  labs(title = "Boxplot of Vaccinations by Vaccine Type (Without Outliers)", x = "Vaccine", y = "Total Vaccinations")
+
+# Histogram without outliers
+ggplot(filtered_data, aes(x = total_vaccinations)) +
+  geom_histogram(bins = 50, fill = "blue", color = "black") +
+  labs(title = "Histogram of Total Vaccinations (Without Outliers)", x = "Total Vaccinations", y = "Frequency")
+
+
+# Barplot
+ggplot(filtered_data, aes(x = vaccine, y = total_vaccinations, fill = vaccine)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Barplot of Total Vaccinations by Vaccine", x = "Vaccine", y = "Location")
+
+# Violin Plot
+ggplot(filtered_data, aes(x = vaccine, y = total_vaccinations, fill = vaccine)) +
+  geom_violin() +
+  labs(title = "Violin Plot of Vaccinations by Vaccine Type", x = "Vaccine", y = "Total Vaccinations")
+
+```
+
+```{r}
+# Aggregate data
+library(dplyr)
+country_totals <- data %>%
+  group_by(location) %>%
+  summarize(total = max(total_vaccinations))
+
+# Heatmap
+library(ggplot2)
+ggplot(country_totals, aes(x = reorder(location, -total), y = total)) +
+  geom_tile(aes(fill = total)) +
+  scale_fill_viridis_c() +
+  labs(title = "Heatmap of Vaccinations by Country",
+       x = "Country",
+       y = "Total Vaccinations") +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+
+
+# Faceted line graph by vaccine
+ggplot(data, aes(x = date, y = total_vaccinations, color = vaccine)) +
+  geom_line() +
+  facet_wrap(~vaccine) +
+  labs(title = "Vaccination Trends by Vaccine Type",
+       x = "Date",
+       y = "Total Vaccinations (log scale)")
+
+# Boxplot
+ggplot(data, aes(x = location, y = total_vaccinations)) +
+  geom_boxplot() +
+  scale_y_log10() +
+  labs(title = "Distribution of Total Vaccinations by Country",
+       x = "Country",
+       y = "Total Vaccinations (log scale)") +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+
+# Aggregate data by vaccine and location
+vaccine_totals <- data %>%
+  group_by(location, vaccine) %>%
+  summarize(total = max(total_vaccinations), .groups = 'drop')
+
+# Stacked bar chart
+ggplot(vaccine_totals, aes(x = location, y = total, fill = vaccine)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Vaccinations by Vaccine Type and Country",
+       x = "Country",
+       y = "Total Vaccinations") +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+
+
+# Load necessary libraries
+library(ggplot2)
+library(scales)  # For the trans argument in scale_y_continuous
+
+# Load the data and convert date
+data$date <- as.Date(data$date, "%Y-%m-%d")
+
+# Faceted line graph with dynamic y-axis
+ggplot(data, aes(x = date, y = total_vaccinations, color = vaccine)) +
+  geom_line() +
+  facet_wrap(~vaccine, scales = "free_y") +  # Free the y scales to adjust dynamically
+  scale_y_continuous(labels = comma, 
+                     trans = "log10") +  # Apply log10 transformation dynamically
+  labs(title = "Vaccination Trends by Vaccine Type",
+       x = "Date",
+       y = "Total Vaccinations") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+
+```

@@ -1,7 +1,7 @@
 ---
 title: "Classification with Logistic Regression"
 subtitle: "Application: Predicting Disease (Framingham Study)"
-author: "??"
+author: "Simon Lee, Jack Taiclet, Eric Li "
 date: "5/07/2024"
 output: html_document
 ---
@@ -59,7 +59,7 @@ library(wesanderson)
 
 Use read.csv() to load the dataset. Convert Education to a factor variable, rename the TenYearCHD variable as CHD, rename the Male variable as Sex, and convert Sex to factor variable with text labels.
 ```{r}
-#setwd(??)
+setwd("/Users/simonlee/UCLA-Grad-Courses/MGMT298/p3")
 FRAMINGHAM = read.csv("framingham.csv")
 FRAMINGHAM$Education = as.factor(FRAMINGHAM$Education)
 FRAMINGHAM = rename(FRAMINGHAM, CHD = TenYearCHD)
@@ -70,8 +70,11 @@ FRAMINGHAM$Sex = ifelse(FRAMINGHAM$Sex == 1, "Male", "Female")
 **QUESTION 1:** 
 What fraction of patients experienced CHD?
 ```{r}
-??
+chd_fraction <- mean(FRAMINGHAM$CHD)
+chd_fraction
 ```
+
+From the table above it is 15.22% of patients experienced CHD.
 
 # 3. Training the Model
 
@@ -85,10 +88,13 @@ TEST = subset(FRAMINGHAM, split == FALSE)
 
 **QUESTION 2:** Run a logistic regression on the training dataset, using TenYearCHD as the dependent variable and all others as independent variables. Examine the odds ratios and confidence intervals. Which variables increase the risk of CHD and are statistically significant at 5%?
 ```{r}
-LogitCHD = glm(?? ~ ??, data = ??, family = "binomial")
-
+LogitCHD <- glm(CHD ~ ., data = TRAIN, family = "binomial")
 summ(LogitCHD, digits=3, exp=TRUE)
 ```
+
+
+The analysis of the logistic regression model reveals several variables that significantly increase the risk of coronary heart disease (CHD) at the 5% significance level. Being male increases the risk of CHD by 68.4%, as indicated by an odds ratio of 1.684 with a statistically significant p-value. Age also significantly increases the risk, with each additional year raising the risk by 6.5%. Cigarette consumption is another significant risk factor, with each additional cigarette smoked per day increasing CHD risk by 1.9%. Elevated total cholesterol and systolic blood pressure are also significant, increasing the risk by 0.3% and 1.0% per unit increase, respectively. Lastly, higher glucose levels are associated with a 0.7% increase in risk per unit increase, significantly impacting CHD risk.
+
 
 To better visualize this, we can plot the odds ratios and 95% confidence intervals for each variable.
 ```{r}
@@ -102,44 +108,56 @@ plot_model(LogitCHD, show.values = TRUE, value.size=3, value.offset=0.5) +
 
 **QUESTION 3:** Using the test dataset, predict the probability of 10-year CHD. Store this value in the TEST dataframe as a new column called PredictCHD.
 ```{r}
-?? = predict(LogitCHD, newdata = TEST, type = "response")
+TEST$PredictCHD = predict(LogitCHD, newdata = TEST, type = "response")
 ```
 
 **QUESTION 4:** Plot the predicted probability of CHD (y-axis) versus age (x-axis). Adjust the color by the CHD variable and adjust the size by SysBP. Manually add a horizontal line corresponding to a threshold of 0.6. Based on a visual inspection, do you think this threshold is too high or too low?
 ```{r}
 TEST$CHD = as.factor(TEST$CHD)
 
-ggplot(??, aes(x=??, y=??, color=??, size=??)) + 
+ggplot(TEST, aes(x=Age, y=PredictCHD, color=CHD, size=SysBP)) + 
   facet_wrap(~ Sex) +
   geom_point(alpha=0.25) + 
-  geom_hline(yintercept=??, color = "navy") +
+  geom_hline(yintercept=0.6, color = "navy") +
   annotate(geom="text", x=40, y=0.63, label="Threshold = 0.6", color="navy") +
   scale_y_continuous("Predicted Probability of CHD") +
   scale_color_manual("CHD", labels = c("No", "Yes"), values = wes_palette("Royal1", n = )) +
   ggtitle("Predicted Probability vs Actual Coronary Heart Disease (CHD)")  
 ```
 
+Yes the threshold is way too high. Most of the datapoints lie under the threshold. It can be maybe lowered to 0.5 to capture more of the patients.
+
 # 5. Model Accuracy
 
 **QUESTION 5:** In the training data, which outcome for TenYearCHD is most likely? Suppose we use this outcome as our prediction for ALL patients in the test data. What is the accuracy of this base model? Hint: use the table() function to see raw observation counts.
 ```{r}
-table(??)
-table(??)
+outcome_counts <- table(TRAIN$CHD)
 
-BaseAccuracy = ??
+# Find the most common outcome
+most_common_outcome <- ifelse(outcome_counts[1] > outcome_counts[2], 0, 1)
+
+# Assume this outcome for all test cases
+constant_prediction <- rep(most_common_outcome, nrow(TEST))
+
+# Calculate the accuracy of this base model
+BaseAccuracy <- mean(constant_prediction == TEST$CHD)
 BaseAccuracy
 ```
+
+The accuracy of the base model is 84.79%.
 
 **QUESTION 6:** Generate a confusion matrix, assuming a probability cutoff threshold of 0.6. What is the accuracy of the model using the test dataset? 
 ```{r}
 Threshold = 0.6
 
-Confusion = table(TEST$CHD, TEST$PredictCHD > ??)
+Confusion = table(TEST$CHD, TEST$PredictCHD > Threshold)
 Confusion
 
 Accuracy = sum(diag(Confusion)) / nrow(TEST)
 Accuracy
 ```
+The accuracy of the model using the test dataset is 85.39%.
+
 
 **QUESTION 7:** Plot a receiver operating characteristic (ROC) curve and report the area-under-the-curve (AUC).
 ```{r}
@@ -154,3 +172,4 @@ plot(ROCperf, main = "Receiver Operating Characteristic Curve",
 AUC = as.numeric(performance(ROCpred, "auc")@y.values)
 AUC
 ```
+The Area under the curve is 0.7465.
