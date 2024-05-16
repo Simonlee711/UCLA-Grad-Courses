@@ -1,0 +1,174 @@
+---
+title: "Data Merging and Prediction"
+subtitle: "Application: Predicting calorie consumption (NHANES)"
+author: "??"
+date: "5/14/2024"
+output: html_document
+---
+
+# 1. Overview
+
+The goal of this analysis is to explore the relationship between total caloric intake, including beer consumption, and demographic factors. We will utilize some important R tools, including data importing, merging, summarizing by groups, linear and log-linear regression, and making predictions.
+
+# 2. Data Summary
+ 
+We will use 2 datasets from the National Health and Nutrition Examination Survey (NHANES). The dataset DEMO includes respondents from 2015-16 and 2017-18. The dataset CALORIES was created using the NHANES datasets DR1IFF_I.XPT and DR1IFF_J.XPT (on daily food consumption) and DRXFCD_J.XPT (on food codes) available at: https://wwwn.cdc.gov/nchs/nhanes/Default.aspx.
+
+**DEMO**
+
+* **SEQN:**          Respondent's sequence number
+* **AGE:**           Respondent's age (years)
+* **GENDER:**        Respondent's biological sex (Male, Female)
+* **EDUCATION:**     Respondent's education level (Less than High School, High School, Some College, College Grad)
+* **MARITAL:**       Respondent's marital status (Married, Widowed, Divorced, Separated, Single, Living Partner)
+* **PREGNANT:**      Respondent's pregnancy status (Yes, No)
+
+**CALORIES**
+
+* **SEQN:**          Respondent's sequence number
+* **ALL_CALORIES:**  Total calories consumed (food + drinks) by respondent in past 24 hours     
+* **BEER_CALORIES:** Calories consumed from beer in past 24 hours
+
+Let's first load some useful libraries. 
+```{r, message = FALSE}
+library(sjPlot)
+library(tidyverse)
+library(formattable)
+library(jtools)
+library(scales)
+library(ggridges)
+library(viridis)
+```
+
+Use read.csv() to load the datasets.
+```{r}
+setwd(??)
+DEMO = read.csv("NHANES/DEMO.csv")
+CALORIES = read.csv("NHANES/CALORIES.csv")
+```
+
+# 3. Data Merging
+
+**QUESTION 1:** Use full_join() to merge the datasets using "SEQN" as the common link. Name this new dataset FULL. How many observations are in FULL?
+```{r}
+??
+```
+
+**QUESTION 2:** Use inner_join() to merge the datasets using "SEQN" as the common link. Name this new dataset INNER. How many observations are in INNER?
+```{r}
+??
+```
+
+We will use INNER in the remainder of the lab, as we want only to include only those individuals with both demographic information and calorie consumption data.
+
+# 4. Data Exploration
+
+**QUESTION 3:** Calculate the mean of ALL calories and BEER calories, by gender. 
+```{r}
+SUMMARY_GENDER = ??
+
+formattable(SUMMARY_GENDER, digits=3)
+```
+
+**QUESTION 4:** Consumers with what education level consume the most TOTAL calories? And the most BEER calories?
+```{r}
+INNER$EDUCATION = factor(INNER$EDUCATION, levels=c("College Grad", "Some College", "High School", "Less than High School"))
+
+SUMMARY_EDUCATION = ??
+
+formattable(SUMMARY_EDUCATION, digits=3)
+```
+
+# 5. Data Visualization
+
+**QUESTION 5:** Create a ridge plot of total calorie consumption, by gender and education level.
+```{r message=FALSE, warning = FALSE}
+SUMMARY_BOTH = INNER %>%
+  group_by(EDUCATION, GENDER) %>%
+  summarize(MEAN_ALL=mean(ALL_CALORIES))
+
+ggplot(data=INNER, aes(x=??, y=??, fill=EDUCATION)) + facet_wrap(~GENDER) +
+  geom_density_ridges(alpha=0.5) + 
+  scale_fill_viridis("Education", discrete = TRUE) +
+  scale_x_continuous("Total calories", limits=c(0,6000)) +
+  scale_y_discrete("") +
+  geom_text(data=SUMMARY_BOTH, aes(x=MEAN_ALL, y=EDUCATION, label=round(MEAN_ALL, digits=0)), nudge_y=0.8) +
+  ggtitle("Daily calories consumed, by gender and education")
+
+```
+
+**QUESTION 6:** Create a ridge plot of total calorie consumption, by gender and marital status.
+```{r message=FALSE, warning = FALSE}
+INNER$MARITAL = factor(INNER$MARITAL, levels=c("Married", "Living Partner", "Divorced", "Separated", "Widowed", "Single"))
+
+SUMMARY_MARITAL = INNER %>%
+  group_by(MARITAL, GENDER) %>%
+  summarize(MEAN_ALL=mean(ALL_CALORIES))
+
+ggplot(data=INNER, aes(x=??, y=??, fill=MARITAL)) + facet_wrap(~GENDER) +
+  geom_density_ridges(alpha=0.5) + 
+  scale_fill_viridis("Status", discrete = TRUE) +
+  scale_x_continuous("Total calories", limits=c(0,6000)) +
+  scale_y_discrete("") +
+  geom_text(data=SUMMARY_MARITAL, aes(x=MEAN_ALL, y=MARITAL, label=round(MEAN_ALL, digits=0)), nudge_y=0.8) +
+  ggtitle("Daily calories consumed, by gender and marital status")
+```
+
+# 6. Linear Regression Analysis
+
+**QUESTION 7:** Regress ALL calories on age, gender, education and marital status using the INNER data. Which variable(s) are significant?
+```{r}
+regression1 = ??
+summ(regression1, digits=2)
+```
+
+**QUESTION 8:** Regress ALL calories on gender and pregnancy status using the INNER data. What is your interpretation of the pregnant variable?
+```{r}
+regression2 = ??
+summ(regression2, digits=2)
+```
+
+# 7. Logistic Regression Analysis
+
+**QUESTION 9:** Create a new binary variable called BEER_DRINKER if a person consumes any beer calories. How many beer drinkers are in the data?
+```{r}
+INNER$BEER_DRINKER = ??
+table(??)
+```
+
+**QUESTION 10:** Run a logistic regression on BEER_DRINKER with age, gender, education and marital status as independent variables. Which variable(s) are significant?
+```{r}
+logit1 = ??
+summ(logit1, exp=TRUE, digits=2)
+```
+
+```{r}
+plot_model(logit1, show.values = TRUE, value.size=3, value.offset=0.5) +
+  ggtitle("Odds ratios for beer drinker") 
+```
+
+**QUESTION 11:** Run a logistic regression on BEER_DRINKER with gender and pregnancy status as independent variables. Which variable(s) are significant?
+```{r}
+logit2 = ??
+summ(logit2, exp=TRUE, digits=2)
+```
+
+Finally, let's use regression 1 to make a prediction for a friend, a 25-year old single man who graduated college. We first create a small dataframe called FRIEND and enter some input values for the regression.
+```{r}
+FRIEND = data.frame(
+  AGE = 25,
+  GENDER = "Male",
+  EDUCATION = "College Grad",
+  MARITAL = "Single"
+)
+```
+
+Then we enter the input data into the predict() command. We can also obtain a 95% prediction interval.
+```{r}
+predict(regression1, newdata = FRIEND, interval = "prediction")
+```
+
+**QUESTION 12:** Your neighbor is a 32-year old female Instagram influencer who attended some college and is living with a partner. What is her predicted calorie consumption?
+```{r}
+??
+```

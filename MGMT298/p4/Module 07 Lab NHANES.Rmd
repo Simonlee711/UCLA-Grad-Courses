@@ -1,7 +1,7 @@
 ---
 title: "Data Merging and Prediction"
 subtitle: "Application: Predicting calorie consumption (NHANES)"
-author: "??"
+author: "Simon Lee, Jack Taiclet, Eric Li"
 date: "5/14/2024"
 output: html_document
 ---
@@ -42,22 +42,30 @@ library(viridis)
 
 Use read.csv() to load the datasets.
 ```{r}
-setwd(??)
-DEMO = read.csv("NHANES/DEMO.csv")
-CALORIES = read.csv("NHANES/CALORIES.csv")
+setwd("/Users/simonlee/UCLA-Grad-Courses/MGMT298/p4")
+DEMO = read.csv("DEMO.csv")
+CALORIES = read.csv("CALORIES.csv")
 ```
 
 # 3. Data Merging
 
 **QUESTION 1:** Use full_join() to merge the datasets using "SEQN" as the common link. Name this new dataset FULL. How many observations are in FULL?
 ```{r}
-??
+FULL <- full_join(DEMO, CALORIES, by = "SEQN")
+n_obs <- nrow(FULL)
+n_obs
 ```
+
+There are 17675 observations
 
 **QUESTION 2:** Use inner_join() to merge the datasets using "SEQN" as the common link. Name this new dataset INNER. How many observations are in INNER?
 ```{r}
-??
+INNER <- inner_join(DEMO, CALORIES, by = "SEQN")
+n_obs_inner <- nrow(INNER)
+n_obs_inner
 ```
+
+There are 9758 observations
 
 We will use INNER in the remainder of the lab, as we want only to include only those individuals with both demographic information and calorie consumption data.
 
@@ -65,19 +73,35 @@ We will use INNER in the remainder of the lab, as we want only to include only t
 
 **QUESTION 3:** Calculate the mean of ALL calories and BEER calories, by gender. 
 ```{r}
-SUMMARY_GENDER = ??
+SUMMARY_GENDER <- INNER %>%
+  group_by(GENDER) %>%
+  summarise(
+    Mean_All_Calories = mean(ALL_CALORIES, na.rm = TRUE),
+    Mean_Beer_Calories = mean(BEER_CALORIES, na.rm = TRUE)
+  )
 
-formattable(SUMMARY_GENDER, digits=3)
+formattable(SUMMARY_GENDER, digits = 3)
 ```
 
 **QUESTION 4:** Consumers with what education level consume the most TOTAL calories? And the most BEER calories?
 ```{r}
-INNER$EDUCATION = factor(INNER$EDUCATION, levels=c("College Grad", "Some College", "High School", "Less than High School"))
+INNER$EDUCATION <- factor(INNER$EDUCATION, levels = c("College Grad", "Some College", "High School", "Less than High School"))
 
-SUMMARY_EDUCATION = ??
+# Calculating mean calories by education level
+SUMMARY_EDUCATION <- INNER %>%
+  group_by(EDUCATION) %>%
+  summarise(
+    Mean_Total_Calories = mean(ALL_CALORIES, na.rm = TRUE),
+    Mean_Beer_Calories = mean(BEER_CALORIES, na.rm = TRUE)
+  ) %>%
+  arrange(desc(Mean_Total_Calories), desc(Mean_Beer_Calories))
 
-formattable(SUMMARY_EDUCATION, digits=3)
+# Formatting the table for display with three decimal places
+formattable(SUMMARY_EDUCATION, digits = 3)
+
 ```
+
+High schoolers consume the most average calories... concerning.
 
 # 5. Data Visualization
 
@@ -87,7 +111,7 @@ SUMMARY_BOTH = INNER %>%
   group_by(EDUCATION, GENDER) %>%
   summarize(MEAN_ALL=mean(ALL_CALORIES))
 
-ggplot(data=INNER, aes(x=??, y=??, fill=EDUCATION)) + facet_wrap(~GENDER) +
+ggplot(data=INNER, aes(x=ALL_CALORIES, y=EDUCATION, fill=EDUCATION)) + facet_wrap(~GENDER) +
   geom_density_ridges(alpha=0.5) + 
   scale_fill_viridis("Education", discrete = TRUE) +
   scale_x_continuous("Total calories", limits=c(0,6000)) +
@@ -105,42 +129,62 @@ SUMMARY_MARITAL = INNER %>%
   group_by(MARITAL, GENDER) %>%
   summarize(MEAN_ALL=mean(ALL_CALORIES))
 
-ggplot(data=INNER, aes(x=??, y=??, fill=MARITAL)) + facet_wrap(~GENDER) +
+ggplot(data=INNER, aes(x=ALL_CALORIES, y=MARITAL, fill=MARITAL)) + facet_wrap(~GENDER) +
   geom_density_ridges(alpha=0.5) + 
   scale_fill_viridis("Status", discrete = TRUE) +
   scale_x_continuous("Total calories", limits=c(0,6000)) +
   scale_y_discrete("") +
   geom_text(data=SUMMARY_MARITAL, aes(x=MEAN_ALL, y=MARITAL, label=round(MEAN_ALL, digits=0)), nudge_y=0.8) +
   ggtitle("Daily calories consumed, by gender and marital status")
+
 ```
 
 # 6. Linear Regression Analysis
 
 **QUESTION 7:** Regress ALL calories on age, gender, education and marital status using the INNER data. Which variable(s) are significant?
 ```{r}
-regression1 = ??
+regression1 <- lm(ALL_CALORIES ~ AGE + GENDER + EDUCATION + MARITAL, data = INNER)
 summ(regression1, digits=2)
 ```
 
+The age, gender-male, EDUCATIONLess than High school and marital single are all statistically significant.
+
 **QUESTION 8:** Regress ALL calories on gender and pregnancy status using the INNER data. What is your interpretation of the pregnant variable?
 ```{r}
-regression2 = ??
+regression2 <- lm(ALL_CALORIES ~ GENDER + PREGNANT, data = INNER)
 summ(regression2, digits=2)
 ```
+Here are the interpretations of the pregnancy variable on all statistical measures.
+Coefficient (Est.): The coefficient for PREGNANTYes is 307.61. This suggests that, all else being equal, pregnant individuals consume an average of 307.61 more calories compared to non-pregnant individuals.
+
+Standard Error (S.E.): The standard error of this estimate is 90.77, which measures the average amount that the coefficient 'PREGNANTYes' would differ if the model were estimated multiple times using different samples from the same population.
+
+t-Value: The t-value is 3.39. This is a measure of how many standard deviations the estimated coefficient is far from 0. It helps determine if the coefficient is significantly different from 0 (no effect).
+
+p-Value: The p-value associated with the PREGNANTYes coefficient is 0.00, indicating that the effect of being pregnant on calorie consumption is statistically significant.
+
 
 # 7. Logistic Regression Analysis
 
 **QUESTION 9:** Create a new binary variable called BEER_DRINKER if a person consumes any beer calories. How many beer drinkers are in the data?
 ```{r}
-INNER$BEER_DRINKER = ??
-table(??)
+INNER$BEER_DRINKER <- ifelse(INNER$BEER_CALORIES > 0, 1, 0)
+
+beer_drinker_count <- table(INNER$BEER_DRINKER)
+beer_drinker_count
+
 ```
+
+There are 1079 people who drink beer.
 
 **QUESTION 10:** Run a logistic regression on BEER_DRINKER with age, gender, education and marital status as independent variables. Which variable(s) are significant?
 ```{r}
-logit1 = ??
+logit1 <- glm(BEER_DRINKER ~ AGE + GENDER + EDUCATION + MARITAL, 
+              data = INNER, family = binomial())
 summ(logit1, exp=TRUE, digits=2)
 ```
+
+The Age, being male, education college, high school, having a partner, being divorced are all statistically significant.
 
 ```{r}
 plot_model(logit1, show.values = TRUE, value.size=3, value.offset=0.5) +
@@ -149,9 +193,12 @@ plot_model(logit1, show.values = TRUE, value.size=3, value.offset=0.5) +
 
 **QUESTION 11:** Run a logistic regression on BEER_DRINKER with gender and pregnancy status as independent variables. Which variable(s) are significant?
 ```{r}
-logit2 = ??
+logit2 <- glm(BEER_DRINKER ~ GENDER + PREGNANT, 
+              data = INNER, family = binomial())
 summ(logit2, exp=TRUE, digits=2)
 ```
+
+Being male is significant but not being pregnant.
 
 Finally, let's use regression 1 to make a prediction for a friend, a 25-year old single man who graduated college. We first create a small dataframe called FRIEND and enter some input values for the regression.
 ```{r}
@@ -170,5 +217,16 @@ predict(regression1, newdata = FRIEND, interval = "prediction")
 
 **QUESTION 12:** Your neighbor is a 32-year old female Instagram influencer who attended some college and is living with a partner. What is her predicted calorie consumption?
 ```{r}
-??
+# Creating a data frame for the neighbor
+NEIGHBOR = data.frame(
+  AGE = 32,
+  GENDER = "Female",
+  EDUCATION = "Some College",
+  MARITAL = "Living Partner"
+)
+
+# Making a prediction using the regression model
+predicted_calories = predict(regression1, newdata = NEIGHBOR, interval = "prediction")
+predicted_calories
+
 ```
